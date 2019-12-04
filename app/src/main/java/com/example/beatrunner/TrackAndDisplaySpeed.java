@@ -8,26 +8,34 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.w3c.dom.Text;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TrackAndDisplaySpeed extends AppCompatActivity implements SensorEventListener {
 
-    TextView stepsDisplay;
-    Button resumeOrPause;
+    static int INTERVAL = 3000;
 
+    TextView stepsDisplay;
+    TextView cadenceDisplay;
+    Button resumeOrPause;
     SensorManager sensorManager;
     Vibrator vibrator;
 
+    long startTimeMS;
+    List<Long> stepTimesMS = new ArrayList<Long>();
+    float cadence = -1;
+    boolean running;
+
     int steps = 0;
 
-    private String RESET = "Reset";
+    private String START = "Start";
+    private String STOP = "Stop";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +45,11 @@ public class TrackAndDisplaySpeed extends AppCompatActivity implements SensorEve
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         stepsDisplay = (TextView) findViewById(R.id.stepDisplay);
-        resumeOrPause = (Button) findViewById(R.id.stopCounting);
+        cadenceDisplay = (TextView) findViewById(R.id.cadenceDisplay);
+        resumeOrPause = (Button) findViewById(R.id.change);
+        startTimeMS = System.currentTimeMillis();
+
+        running = true;
     }
 
     protected void onResume() {
@@ -56,14 +68,44 @@ public class TrackAndDisplaySpeed extends AppCompatActivity implements SensorEve
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-//        VibrationEffect vibrationEffect = VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE);
+        long currentTimeMS = System.currentTimeMillis();
         vibrator.vibrate(50);
         steps ++;
         stepsDisplay.setText(Integer.toString(steps));
+        stepTimesMS.add(System.currentTimeMillis());
+        if (currentTimeMS - startTimeMS >= INTERVAL) {
+            cadence = calculateCadence(currentTimeMS);
+        } else {
+            cadence = -1;
+        }
+        if (cadence > 0) {
+            cadenceDisplay.setText(Float.toString(cadence));
+        } else {
+            cadenceDisplay.setText(null);
+        }
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
     }
+
+    private float calculateCadence(long currentTimeMS) {
+        while (currentTimeMS - stepTimesMS.get(0) >= INTERVAL) {
+            stepTimesMS.remove(0);
+        }
+        return 60 / (INTERVAL / 1000) * stepTimesMS.size();
+    }
+
+    protected void change (View view) {
+        if (running) {
+            running = false;
+            resumeOrPause.setText(STOP);
+        } else {
+            startTimeMS = System.currentTimeMillis();
+            running = true;
+            resumeOrPause.setText(START);
+        }
+    }
+
 }
