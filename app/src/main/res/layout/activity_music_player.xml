@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MusicPlayer">
+
+    <Button
+        android:id="@+id/button_play"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="16dp"
+        android:onClick="playMusic"
+        android:text="@string/button_play"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/button_pause"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:onClick="pauseMusic"
+        android:text="@string/button_pause"
+        app:layout_constraintBottom_toBottomOf="@+id/button_play"
+        app:layout_constraintStart_toEndOf="@+id/button_play"
+        app:layout_constraintTop_toTopOf="@+id/button_play" />
+
+    <Button
+        android:id="@+id/button_stop"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:onClick="stopMusic"
+        android:text="@string/button_stop"
+        app:layout_constraintBottom_toBottomOf="@+id/button_pause"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/button_pause" />
+
+    <TextView
+        android:id="@+id/debugTextView"
+        android:layout_width="381dp"
+        android:layout_height="466dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="@string/display_message"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
