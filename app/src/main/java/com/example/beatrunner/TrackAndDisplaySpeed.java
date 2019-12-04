@@ -19,7 +19,7 @@ import java.util.List;
 
 public class TrackAndDisplaySpeed extends AppCompatActivity implements SensorEventListener {
 
-    static int INTERVAL = 3000;
+    static int INTERVAL = 5000;
 
     TextView stepsDisplay;
     TextView cadenceDisplay;
@@ -46,10 +46,11 @@ public class TrackAndDisplaySpeed extends AppCompatActivity implements SensorEve
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         stepsDisplay = (TextView) findViewById(R.id.stepDisplay);
         cadenceDisplay = (TextView) findViewById(R.id.cadenceDisplay);
-        resumeOrPause = (Button) findViewById(R.id.change);
+        resumeOrPause = (Button) findViewById(R.id.changeButton);
         startTimeMS = System.currentTimeMillis();
 
         running = true;
+        resumeOrPause.setText(STOP);
     }
 
     protected void onResume() {
@@ -68,20 +69,22 @@ public class TrackAndDisplaySpeed extends AppCompatActivity implements SensorEve
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        long currentTimeMS = System.currentTimeMillis();
-        vibrator.vibrate(50);
-        steps ++;
-        stepsDisplay.setText(Integer.toString(steps));
-        stepTimesMS.add(System.currentTimeMillis());
-        if (currentTimeMS - startTimeMS >= INTERVAL) {
-            cadence = calculateCadence(currentTimeMS);
-        } else {
-            cadence = -1;
-        }
-        if (cadence > 0) {
-            cadenceDisplay.setText(Float.toString(cadence));
-        } else {
-            cadenceDisplay.setText(null);
+        if (running) {
+            long currentTimeMS = System.currentTimeMillis();
+            vibrator.vibrate(30);
+            steps++;
+            stepsDisplay.setText(Integer.toString(steps));
+            stepTimesMS.add(System.currentTimeMillis());
+            if (currentTimeMS - startTimeMS >= INTERVAL) {
+                cadence = calculateCadence(currentTimeMS);
+            } else {
+                cadence = -1;
+            }
+            if (cadence > 0) {
+                cadenceDisplay.setText(Float.toString(cadence));
+            } else {
+                cadenceDisplay.setText(null);
+            }
         }
     }
 
@@ -94,17 +97,18 @@ public class TrackAndDisplaySpeed extends AppCompatActivity implements SensorEve
         while (currentTimeMS - stepTimesMS.get(0) >= INTERVAL) {
             stepTimesMS.remove(0);
         }
-        return 60 / (INTERVAL / 1000) * stepTimesMS.size();
+        return (float) (60.0 / ((currentTimeMS - stepTimesMS.get(0)) / 1000.0) * (float) stepTimesMS.size());
     }
 
-    protected void change (View view) {
+    public void change (View view) {
         if (running) {
             running = false;
-            resumeOrPause.setText(STOP);
+            resumeOrPause.setText(START);
+            stepTimesMS.clear();
         } else {
             startTimeMS = System.currentTimeMillis();
             running = true;
-            resumeOrPause.setText(START);
+            resumeOrPause.setText(STOP);
         }
     }
 

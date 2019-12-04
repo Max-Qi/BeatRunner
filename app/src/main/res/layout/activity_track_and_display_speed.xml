@@ -7,10 +7,11 @@
     tools:context=".TrackAndDisplaySpeed">
 
     <Button
-        android:id="@+id/change"
+        android:id="@+id/changeButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="299dp"
+        android:onClick="change"
         android:text="@string/button_change"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -36,6 +37,7 @@
         android:layout_marginStart="155dp"
         android:layout_marginEnd="155dp"
         android:layout_marginBottom="120dp"
+        android:onClick="change"
         android:text="@string/display_message"
         app:layout_constraintBottom_toTopOf="@+id/stepDisplay"
         app:layout_constraintEnd_toEndOf="parent"
