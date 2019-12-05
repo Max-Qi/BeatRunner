@@ -19,12 +19,20 @@ public class MusicPlayer extends AppCompatActivity {
     private Button buttonPause;
     private Button buttonStop;
 
+    private MediaPlayerFunctionalities player;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_music_player);
         initializeUI();
         initializePlayer();
+    }
+
+    @Override
+    protected void onStart(){
+        super.onStart();
+        player.load(MUSIC_ID);
     }
 
     private void initializeUI() {
@@ -35,18 +43,20 @@ public class MusicPlayer extends AppCompatActivity {
     }
 
     private void initializePlayer() {
-
+        MediaPlayerWrapper mediaPlayerWrapper = new MediaPlayerWrapper(this);
+        player = mediaPlayerWrapper;
+        player.initializePlayer();
     }
 
     public void playMusic(View view) {
-
+        player.play();
     }
 
     public void pauseMusic(View view) {
-
+        player.pause();
     }
 
     public void stopMusic(View view) {
-
+        player.stop();
     }
 }
