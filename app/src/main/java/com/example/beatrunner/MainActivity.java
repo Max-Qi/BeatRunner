@@ -16,6 +16,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        System.loadLibrary("BeatRunner");
         startCadenceTracker = (Button) findViewById(R.id.buttonStartCadence);
         startMusicPlayer = (Button) findViewById(R.id.buttonStartMusic);
     }
@@ -30,5 +31,5 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    private native void  onFxOff();
+    private native void StopAudio();
 }
