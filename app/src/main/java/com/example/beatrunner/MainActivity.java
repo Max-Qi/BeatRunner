@@ -29,4 +29,6 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this, MusicPlayer.class);
         startActivity(intent);
     }
+
+    private native void  onFxOff();
 }
