@@ -64,5 +64,8 @@ public class SuperPlayer extends AppCompatActivity {
         }
         int sampleRate = Integer.parseInt(sampleRateString);
         int bufferSize = Integer.parseInt(buffersizeString);
+        System.loadLibrary("BeatRunner");
+        BeatRunner(sampleRate, bufferSize);
     }
+    private native void BeatRunner (int sampleRate, int bufferSize);
 }
