@@ -12,12 +12,12 @@ android {
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
-	
-	ndk {
-	    abiFilters 'armeabi-v7a', 'arm64-v8a'
-	}
 
-	externalNativeBuild {
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
+
+        externalNativeBuild {
             cmake {
                 arguments '-DANDROID_PLATFORM=android-19', '-DANDROID_TOOLCHAIN=clang', '-DANDROID_ARM_NEON=TRUE', '-DANDROID_STL=c++_static', "-DPATH_TO_SUPERPOWERED:STRING=${superpowered_sdk_path}"
                 cFlags '-O3', '-fsigned-char' // full optimization, char data type is signed
