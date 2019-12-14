@@ -7,11 +7,14 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.AssetFileDescriptor;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
+
+import java.io.IOException;
 
 public class SuperPlayer extends AppCompatActivity {
 
@@ -64,8 +67,23 @@ public class SuperPlayer extends AppCompatActivity {
         }
         int sampleRate = Integer.parseInt(sampleRateString);
         int bufferSize = Integer.parseInt(buffersizeString);
+
+        AssetFileDescriptor fd = getResources().openRawResourceFd(R.raw.shook_ones);
+        int fileOffset = (int)fd.getStartOffset();
+        int fileLength = (int)fd.getLength();
+        try {
+            fd.getParcelFileDescriptor().close();
+        } catch (IOException e) {
+            Log.e("SuperPlayer", "Close error.");
+        }
+
         System.loadLibrary("BeatRunner");
-        BeatRunner(sampleRate, bufferSize);
+        String path = getPackageResourcePath();
+        BeatRunnerInit(sampleRate, bufferSize);
+        OpenFile(path, fileOffset, fileLength);
     }
-    private native void BeatRunner (int sampleRate, int bufferSize);
+
+
+    private native void BeatRunnerInit (int sampleRate, int bufferSize);
+    private native void OpenFile(String path, int offset, int length);
 }
