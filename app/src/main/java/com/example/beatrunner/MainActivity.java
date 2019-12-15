@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void startGroovin(View view) {
-        Intent intent = new Intent(this, MusicPlayer.class);
+        Intent intent = new Intent(this, SuperPlayer.class);
         startActivity(intent);
     }
 }

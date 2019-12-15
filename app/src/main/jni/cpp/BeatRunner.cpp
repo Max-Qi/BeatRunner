@@ -1,6 +1,6 @@
+#include <iostream>
 #include <BeatRunner.h>
 #include <Superpowered.h>
-#include <OpenSource/SuperpoweredAndroidAudioIO.h>
 #include <malloc.h>
 #include <android/log.h>
 #include <SLES/OpenSLES.h>
@@ -8,14 +8,20 @@
 #include <jni.h>
 #include <string>
 #include <SuperpoweredSimple.h>
+#include <SuperpoweredCPU.h>
 
-bool BeatRunner::audioProcessing(
+static bool audioProcessing(
     void * __unused clientData,	// A custom pointer your callback receives.
     short int *audioIO,	// 16-bit stereo interleaved audio input and/or output.
     int numFrames,		// The number of frames received and/or requested.
     int sampleRate	    // The current sample rate in Hz.
 ) {
+    return ((BeatRunner*)clientData)->process(audioIO, (unsigned int)sampleRate, (unsigned int)numFrames);
+}
+
+bool BeatRunner::process(short int *audioIO, unsigned int sampleRate, unsigned int numFrames) {
     player->outputSamplerate = sampleRate;
+
     float playerOutput [numFrames * 2];
     if (player->processStereo(playerOutput, false, (unsigned int) numFrames)) {
         Superpowered::FloatToShortInt(playerOutput, audioIO, (unsigned int) numFrames);
@@ -25,9 +31,7 @@ bool BeatRunner::audioProcessing(
     }
 }
 
-BeatRunner::BeatRunner(
-    unsigned int sampleRate,
-    unsigned int bufferSize) {
+BeatRunner::BeatRunner(unsigned int sampleRate, unsigned int bufferSize) {
     Superpowered::Initialize(
         "ExampleLicenseKey-WillExpire-OnNextUpdate",
         true, // enableAudioAnalysis (using SuperpoweredAnalyzer, SuperpoweredLiveAnalyzer, SuperpoweredWaveform or SuperpoweredBandpassFilterbank)
@@ -45,15 +49,10 @@ BeatRunner::BeatRunner(
         false,
         true,
         audioProcessing,
-        NULL,
+        this,
         -1,
         -1
     );
-}
-
-BeatRunner::OpenFile(const char *path, int offset, int length) {
-    player->open(path, offset, length);
-
 }
 
 BeatRunner::~BeatRunner() {
@@ -61,18 +60,27 @@ BeatRunner::~BeatRunner() {
     delete player;
 }
 
+void BeatRunner::OpenFile(const char *path, int offset, int length) {
+    player->open(path, offset, length);
+}
+
+void BeatRunner::TogglePlayPause() {
+    player->togglePlayback();
+    Superpowered::CPU::setSustainedPerformanceMode(player->isPlaying());
+}
+
+static BeatRunner *beatRunner = NULL;
+
 extern "C" JNIEXPORT void
 Java_com_example_beatrunner_SuperPlayer_BeatRunnerInit(
     JNIEnv * __unused env,
     jobject __unused obj,
     jint sampleRate,
     jint bufferSize) {
-
-    BeatRunner((unsigned int)sampleRate, (unsigned int)bufferSize);
+    beatRunner = new BeatRunner((unsigned int)sampleRate, (unsigned int)bufferSize);
 }
 
-extern "C"
-JNIEXPORT void JNICALL
+extern "C" JNIEXPORT void
 Java_com_example_beatrunner_SuperPlayer_OpenFile(
     JNIEnv *env,
     jobject thiz,
@@ -81,6 +89,11 @@ Java_com_example_beatrunner_SuperPlayer_OpenFile(
     jint length) {
 
     const char *str = env->GetStringUTFChars(path, 0);
-    BeatRunner::OpenFile(str, offset, length);
+    beatRunner->OpenFile(str, offset, length);
     env->ReleaseStringUTFChars(path, str);
+}
+
+extern "C" JNIEXPORT void
+Java_com_example_beatrunner_SuperPlayer_TogglePlayPause(JNIEnv *env, jobject thiz) {
+    beatRunner->TogglePlayPause();
 }

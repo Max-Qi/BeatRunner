@@ -12,6 +12,8 @@ import android.content.res.AssetFileDescriptor;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -19,7 +21,8 @@ import java.io.IOException;
 public class SuperPlayer extends AppCompatActivity {
 
     private boolean hasAllPermissions = false;
-    AudioManager audioManager;
+    private boolean isPlaying = false;
+     AudioManager audioManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +42,7 @@ public class SuperPlayer extends AppCompatActivity {
                 return;
             }
         }
+        hasAllPermissions = true;
     }
 
     @Override
@@ -83,7 +87,18 @@ public class SuperPlayer extends AppCompatActivity {
         OpenFile(path, fileOffset, fileLength);
     }
 
+    public void ButtonTogglePlayPause(View view) {
+        TogglePlayPause();
+        Button button = findViewById(R.id.button);
+        if (isPlaying) {
+            button.setText("Play");
+        } else {
+            button.setText("Pause");
+        }
+        isPlaying = !isPlaying;
+    }
 
     private native void BeatRunnerInit (int sampleRate, int bufferSize);
     private native void OpenFile(String path, int offset, int length);
+    private native void TogglePlayPause();
 }
