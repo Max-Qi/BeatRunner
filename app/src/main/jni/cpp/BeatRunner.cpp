@@ -55,17 +55,11 @@ BeatRunner::BeatRunner(unsigned int sampleRate, unsigned int bufferSize, const c
         -1,
         -1
     );
-    decoder = new Superpowered::Decoder;
-    analyzer = new Superpowered::Analyzer(decoder->getSamplerate(), decoder->getDurationSeconds());
-    filter = new Superpowered::Filter(Superpowered::Resonant_Lowpass, decoder->getSamplerate());
+    decoder = new Superpowered::Decoder();
     int open = decoder->open(path, false, offset, length);
-
-    filter->frequency = 1000.0f;
-    filter->resonance = 0.1f;
-    filter->enabled = true;
-
-    short int *intBuffer = (short int *)malloc(decoder->getFramesPerChunk() * 2 * sizeof(short int) + 16384);
-    float *floatBuffer = (float *)malloc(decoder->getFramesPerChunk() * 2 * sizeof(float) + 16384);
+    analyzer = new Superpowered::Analyzer(decoder->getSamplerate(), (int) decoder->getDurationSeconds());
+    short int *intBuffer = (short int *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(short int) + 16384);
+    float *floatBuffer = (float *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(float) + 16384);
 
     while(true) {
         unsigned int framesDecoded = decoder->decodeAudio(intBuffer, decoder->getFramesPerChunk());
@@ -73,12 +67,12 @@ BeatRunner::BeatRunner(unsigned int sampleRate, unsigned int bufferSize, const c
             break;
         }
         Superpowered::ShortIntToFloat(intBuffer, floatBuffer, framesDecoded);
-        filter->process(floatBuffer, floatBuffer, framesDecoded);
-        // analyzer->process(floatBuffer, framesDecoded);
+        analyzer->process(floatBuffer, framesDecoded);
     }
 
     analyzer->makeResults(60, 200, 0, 0, false, false, false, false, false);
     int bpm = analyzer->bpm;
+
 }
 
 BeatRunner::~BeatRunner() {
@@ -101,7 +95,6 @@ void BeatRunner::TogglePlayPause() {
 double BeatRunner::GetBPM(const char *path, int offset, int length) {
     decoder = new Superpowered::Decoder;
     analyzer = new Superpowered::Analyzer(decoder->getSamplerate(), decoder->getDurationSeconds());
-    filter = new Superpowered::Filter(Superpowered::Resonant_Lowpass, decoder->getSamplerate());
     int open = decoder->open(path, false, offset, length);
 
     filter->frequency = 1000.0f;
