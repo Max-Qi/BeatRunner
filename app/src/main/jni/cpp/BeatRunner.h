@@ -8,10 +8,9 @@
 #include <SuperpoweredAudioBuffers.h>
 #include <SuperpoweredFilter.h>
 
-
 class BeatRunner {
 public:
-    BeatRunner(unsigned int sampleRate, unsigned int bufferSize);
+    BeatRunner(unsigned int sampleRate, unsigned int bufferSize, const char *path, int offset, int length);
     ~BeatRunner();
     bool process(short int *audioIO, unsigned int sampleRate, unsigned int numFrames);
     void OpenFile(const char *path, int offset, int length);

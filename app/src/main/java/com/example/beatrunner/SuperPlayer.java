@@ -22,7 +22,7 @@ public class SuperPlayer extends AppCompatActivity {
 
     private boolean hasAllPermissions = false;
     private boolean isPlaying = false;
-     AudioManager audioManager;
+    AudioManager audioManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,7 +68,7 @@ public class SuperPlayer extends AppCompatActivity {
             buffersizeString = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
         }
         if (sampleRateString == null) sampleRateString = "48000";
-        if (buffersizeString == null) buffersizeString = "4800";
+        if (buffersizeString == null) buffersizeString = "480";
         int sampleRate = Integer.parseInt(sampleRateString);
         int bufferSize = Integer.parseInt(buffersizeString);
 
@@ -83,7 +83,7 @@ public class SuperPlayer extends AppCompatActivity {
         }
 
         System.loadLibrary("BeatRunner");
-        BeatRunnerInit(sampleRate, bufferSize);
+        BeatRunnerInit(sampleRate, bufferSize, path, fileOffset, fileLength);
         OpenFile(path, fileOffset, fileLength);
     }
 
@@ -98,7 +98,7 @@ public class SuperPlayer extends AppCompatActivity {
         isPlaying = !isPlaying;
     }
 
-    private native void BeatRunnerInit (int sampleRate, int bufferSize);
+    private native void BeatRunnerInit (int sampleRate, int bufferSize, String path, int fileOffset, int fileLength);
     private native void OpenFile(String path, int offset, int length);
     private native void TogglePlayPause();
 }
