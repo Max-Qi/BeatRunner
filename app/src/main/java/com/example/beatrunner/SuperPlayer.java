@@ -66,12 +66,13 @@ public class SuperPlayer extends AppCompatActivity {
         if (audioManager != null) {
             sampleRateString = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
             buffersizeString = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER);
-            if (sampleRateString == null) sampleRateString = "48000";
-            if (buffersizeString == null) buffersizeString = "4800";
         }
+        if (sampleRateString == null) sampleRateString = "48000";
+        if (buffersizeString == null) buffersizeString = "4800";
         int sampleRate = Integer.parseInt(sampleRateString);
         int bufferSize = Integer.parseInt(buffersizeString);
 
+        String path = getPackageResourcePath();
         AssetFileDescriptor fd = getResources().openRawResourceFd(R.raw.shook_ones);
         int fileOffset = (int)fd.getStartOffset();
         int fileLength = (int)fd.getLength();
@@ -82,7 +83,6 @@ public class SuperPlayer extends AppCompatActivity {
         }
 
         System.loadLibrary("BeatRunner");
-        String path = getPackageResourcePath();
         BeatRunnerInit(sampleRate, bufferSize);
         OpenFile(path, fileOffset, fileLength);
     }
