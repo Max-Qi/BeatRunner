@@ -18,6 +18,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         startCadenceTracker = (Button) findViewById(R.id.buttonStartCadence);
         startMusicPlayer = (Button) findViewById(R.id.buttonStartMusic);
+        Intent intent = new Intent(this, SuperPlayer.class);
+        startActivity(intent);
     }
 
     public void trackSpeed(View view) {

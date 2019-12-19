@@ -83,8 +83,9 @@ public class SuperPlayer extends AppCompatActivity {
         }
 
         System.loadLibrary("BeatRunner");
-        BeatRunnerInit(sampleRate, bufferSize, path, fileOffset, fileLength);
+        BeatRunnerInit(sampleRate, bufferSize);
         OpenFile(path, fileOffset, fileLength);
+        TimeStretch(path, fileOffset, fileLength);
     }
 
     public void ButtonTogglePlayPause(View view) {
@@ -98,7 +99,8 @@ public class SuperPlayer extends AppCompatActivity {
         isPlaying = !isPlaying;
     }
 
-    private native void BeatRunnerInit (int sampleRate, int bufferSize, String path, int fileOffset, int fileLength);
+    private native void BeatRunnerInit (int sampleRate, int bufferSize);
     private native void OpenFile(String path, int offset, int length);
+    private native void TimeStretch(String path, int offset, int length);
     private native void TogglePlayPause();
 }

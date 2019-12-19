@@ -55,24 +55,6 @@ BeatRunner::BeatRunner(unsigned int sampleRate, unsigned int bufferSize, const c
         -1,
         -1
     );
-    decoder = new Superpowered::Decoder();
-    int open = decoder->open(path, false, offset, length);
-    analyzer = new Superpowered::Analyzer(decoder->getSamplerate(), (int) decoder->getDurationSeconds());
-    short int *intBuffer = (short int *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(short int) + 16384);
-    float *floatBuffer = (float *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(float) + 16384);
-
-    while(true) {
-        unsigned int framesDecoded = decoder->decodeAudio(intBuffer, decoder->getFramesPerChunk());
-        if (framesDecoded < 1) {
-            break;
-        }
-        Superpowered::ShortIntToFloat(intBuffer, floatBuffer, framesDecoded);
-        analyzer->process(floatBuffer, framesDecoded);
-    }
-
-    analyzer->makeResults(60, 200, 0, 0, false, false, false, false, false);
-    int bpm = analyzer->bpm;
-
 }
 
 BeatRunner::~BeatRunner() {
@@ -92,17 +74,12 @@ void BeatRunner::TogglePlayPause() {
     Superpowered::CPU::setSustainedPerformanceMode(player->isPlaying());
 }
 
-double BeatRunner::GetBPM(const char *path, int offset, int length) {
-    decoder = new Superpowered::Decoder;
-    analyzer = new Superpowered::Analyzer(decoder->getSamplerate(), decoder->getDurationSeconds());
+int BeatRunner::GetBPM(const char *path, int offset, int length) {
+    decoder = new Superpowered::Decoder();
     int open = decoder->open(path, false, offset, length);
-
-    filter->frequency = 1000.0f;
-    filter->resonance = 0.1f;
-    filter->enabled = true;
-
-    short int *intBuffer = (short int *)malloc(decoder->getFramesPerChunk() * 2 * sizeof(short int) + 16384);
-    float *floatBuffer = (float *)malloc(decoder->getFramesPerChunk() * 2 * sizeof(float) + 16384);
+    analyzer = new Superpowered::Analyzer(decoder->getSamplerate(), (int) decoder->getDurationSeconds());
+    short int *intBuffer = (short int *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(short int) + 16384);
+    float *floatBuffer = (float *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(float) + 16384);
 
     while(true) {
         unsigned int framesDecoded = decoder->decodeAudio(intBuffer, decoder->getFramesPerChunk());
@@ -110,12 +87,21 @@ double BeatRunner::GetBPM(const char *path, int offset, int length) {
             break;
         }
         Superpowered::ShortIntToFloat(intBuffer, floatBuffer, framesDecoded);
-        filter->process(floatBuffer, floatBuffer, framesDecoded);
-        // analyzer->process(floatBuffer, framesDecoded);
+        analyzer->process(floatBuffer, framesDecoded);
     }
-
+    free(intBuffer);
+    free(floatBuffer);
     analyzer->makeResults(60, 200, 0, 0, false, false, false, false, false);
-    int bpm = analyzer->bpm;
+    int bpm = (int) std::round(analyzer->bpm);
+    return bpm;
+}
+
+void BeatRunner::TimeStretch(const char *path, int offset, int length) {
+    int open = decoder->open(path, false, offset, length);
+    delete(analyzer);
+    analyzer = new Superpowered::Analyzer(decoder->getSamplerate(), (int) decoder->getDurationSeconds());
+    short int *intBuffer = (short int *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(short int) + 16384);
+    float *floatBuffer = (float *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(float));
 }
 
 static BeatRunner *beatRunner = NULL;
@@ -132,7 +118,6 @@ Java_com_example_beatrunner_SuperPlayer_OpenFile(JNIEnv *env, jobject thiz, jstr
     const char *str = env->GetStringUTFChars(path, 0);
     beatRunner->OpenFile(str, offset, length);
     beatRunner->GetBPM(str, offset, length);
-    env->ReleaseStringUTFChars(path, str);
 }
 
 extern "C" JNIEXPORT void
@@ -140,3 +125,10 @@ Java_com_example_beatrunner_SuperPlayer_TogglePlayPause(JNIEnv *env, jobject thi
     beatRunner->TogglePlayPause();
 }
 
+extern "C" JNIEXPORT void
+Java_com_example_beatrunner_SuperPlayer_TimeStretch(JNIEnv *env, jobject thiz, jstring path,
+                                                    jint offset, jint length) {
+    const char *str = env->GetStringUTFChars(path, 0);
+    beatRunner->TimeStretch(str, offset, length);
+    env->ReleaseStringUTFChars(path, str);
+}

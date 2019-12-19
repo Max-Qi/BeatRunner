@@ -15,7 +15,8 @@ public:
     bool process(short int *audioIO, unsigned int sampleRate, unsigned int numFrames);
     void OpenFile(const char *path, int offset, int length);
     void TogglePlayPause();
-    double GetBPM(const char *path, int offset, int length);
+    int GetBPM(const char *path, int offset, int length);
+    void TimeStretch(const char *path, int offset, int length);
 
 
 private:
@@ -24,7 +25,6 @@ private:
     Superpowered::Analyzer *analyzer;
     Superpowered::Decoder *decoder;
     Superpowered::Filter *filter;
-
 };
 
 #endif //BEATRUNNER_BEATRUNNER_H
