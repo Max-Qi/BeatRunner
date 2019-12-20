@@ -106,6 +106,21 @@ void BeatRunner::TimeStretch(const char *path, int offset, int length) {
     short int *intBuffer = (short int *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(short int) + 16384);
     float *floatBuffer = (float *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(float));
 
+    timeStretcher->rate = 1.50f;
+    while (true) {
+        unsigned int framesDecoded = decoder->decodeAudio(intBuffer, decoder->getFramesPerChunk());
+        if (framesDecoded < 1) {
+            break;
+        }
+        Superpowered::ShortIntToFloat(intBuffer, floatBuffer, framesDecoded);
+        timeStretcher->addInput(floatBuffer, framesDecoded);
+
+        unsigned int framesAvailable = timeStretcher->getOutputLengthFrames();
+        if (framesAvailable > 0 && timeStretcher->getOutput(floatBuffer, framesAvailable)) {
+            Superpowered::
+        }
+    }
+
 }
 
 static BeatRunner *beatRunner = NULL;
