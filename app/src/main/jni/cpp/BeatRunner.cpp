@@ -100,13 +100,15 @@ int BeatRunner::GetBPM(const char *path, int offset, int length) {
 
 void BeatRunner::TimeStretch(const char *path, int offset, int length) {
     int open = decoder->open(path, false, offset, length);
-    delete(analyzer);
-    analyzer = new Superpowered::Analyzer(decoder->getSamplerate(), (int) decoder->getDurationSeconds());
     timeStretcher = new Superpowered::TimeStretching(decoder->getSamplerate());
     short int *intBuffer = (short int *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(short int) + 16384);
     float *floatBuffer = (float *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(float));
 
     timeStretcher->rate = 1.50f;
+    FILE *stretchedFile = Superpowered::createWAV("150.wav", decoder->getSamplerate(), 2);
+    if (!stretchedFile) {
+        return;
+    }
     while (true) {
         unsigned int framesDecoded = decoder->decodeAudio(intBuffer, decoder->getFramesPerChunk());
         if (framesDecoded < 1) {
@@ -117,10 +119,16 @@ void BeatRunner::TimeStretch(const char *path, int offset, int length) {
 
         unsigned int framesAvailable = timeStretcher->getOutputLengthFrames();
         if (framesAvailable > 0 && timeStretcher->getOutput(floatBuffer, framesAvailable)) {
-            Superpowered::
+            Superpowered::FloatToShortInt(floatBuffer, intBuffer, framesAvailable);
+            Superpowered::writeWAV(stretchedFile, intBuffer, framesAvailable * 4);
         }
     }
 
+    Superpowered::closeWAV(stretchedFile);
+    delete decoder;
+    delete timeStretcher;
+    free(intBuffer);
+    free(floatBuffer);
 }
 
 static BeatRunner *beatRunner = NULL;
