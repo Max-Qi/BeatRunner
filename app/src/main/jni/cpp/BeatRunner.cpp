@@ -77,6 +77,7 @@ void BeatRunner::TogglePlayPause() {
 }
 
 int BeatRunner::GetBPM(const char *path, int offset, int length) {
+    std::string s = path;
     player->open(path, offset, length);
     int open = decoder->open(path, false, offset, length);
     analyzer = new Superpowered::Analyzer(decoder->getSamplerate(), (int) decoder->getDurationSeconds());
@@ -105,7 +106,7 @@ void BeatRunner::TimeStretch(const char *path, int offset, int length) {
     float *floatBuffer = (float *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(float));
 
     timeStretcher->rate = 1.50f;
-    FILE *stretchedFile = Superpowered::createWAV("150.wav", decoder->getSamplerate(), 2);
+    FILE *stretchedFile = Superpowered::createWAV("base.wav", decoder->getSamplerate(), 2);
     if (!stretchedFile) {
         return;
     }
@@ -141,8 +142,9 @@ Java_com_example_beatrunner_SuperPlayer_BeatRunnerInit(JNIEnv * __unused env, jo
 extern "C" JNIEXPORT void
 Java_com_example_beatrunner_SuperPlayer_OpenFile(JNIEnv *env, jobject thiz, jstring path, jint offset, jint length) {
     const char *str = env->GetStringUTFChars(path, 0);
-    // beatRunner->OpenFile(str, offset, length);
+    beatRunner->OpenFile(str, offset, length);
     beatRunner->GetBPM(str, offset, length);
+    env->ReleaseStringUTFChars(path, str);
 }
 
 extern "C" JNIEXPORT void
