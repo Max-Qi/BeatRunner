@@ -20,11 +20,32 @@ static bool audioProcessing(
     int numFrames,		// The number of frames received and/or requested.
     int sampleRate	    // The current sample rate in Hz.
 ) {
+
+    // return ((BeatRunner*)clientData)->timeStretchProcess(audioIO, (unsigned int)sampleRate, (unsigned int)numFrames);
     return ((BeatRunner*)clientData)->process(audioIO, (unsigned int)sampleRate, (unsigned int)numFrames);
+}
+
+bool BeatRunner::timeStretchProcess(short int *audioIO, unsigned int sampleRate, unsigned int numFrames) {
+    player->outputSamplerate = sampleRate;
+    float *playerOutput = (float *)malloc(numFrames * 8 + 64);
+    float *stretcherOutput;
+    if (player->processStereo(playerOutput, false, (unsigned int) numFrames)) {
+        timeStretcher->addInput(playerOutput, timeStretcher->getNumberOfInputFramesNeeded());
+        if (timeStretcher->getOutputLengthFrames() > 0) {
+            stretcherOutput = (float *)malloc(timeStretcher->getOutputLengthFrames() * 8 + 64); // ?
+            timeStretcher->getOutput(stretcherOutput, numFrames);
+        }
+        Superpowered::FloatToShortInt(stretcherOutput, audioIO, (unsigned int) numFrames);
+        return true;
+    } else {
+        return false;
+    }
 }
 
 bool BeatRunner::process(short int *audioIO, unsigned int sampleRate, unsigned int numFrames) {
     player->outputSamplerate = sampleRate;
+    // audioIO is the buffer the player reads
+    // playerOutput is the output buffer that gets fed into audioIO
     float playerOutput [numFrames * 2];
     if (player->processStereo(playerOutput, false, (unsigned int) numFrames)) {
         Superpowered::FloatToShortInt(playerOutput, audioIO, (unsigned int) numFrames);
@@ -57,6 +78,8 @@ BeatRunner::BeatRunner(unsigned int sampleRate, unsigned int bufferSize) {
         -1
     );
     decoder = new Superpowered::Decoder();
+    timeStretcher = new Superpowered::TimeStretching(sampleRate);
+    timeStretcher->rate = 1.25f;
 }
 
 BeatRunner::~BeatRunner() {
@@ -64,7 +87,7 @@ BeatRunner::~BeatRunner() {
     delete player;
     delete analyzer;
     delete decoder;
-    delete filter;
+    delete timeStretcher;
 }
 
 void BeatRunner::OpenFile(const char *path, int offset, int length) {
