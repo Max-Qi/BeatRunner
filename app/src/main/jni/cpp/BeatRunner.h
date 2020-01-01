@@ -27,7 +27,7 @@ private:
     Superpowered::Analyzer *analyzer;
     Superpowered::Decoder *decoder;
     Superpowered::TimeStretching *timeStretcher;
-    Superpowered::AudiopointerList *audioPointerList;
+    Superpowered::AudiopointerList *outputBufferList;
 };
 
 #endif //BEATRUNNER_BEATRUNNER_H

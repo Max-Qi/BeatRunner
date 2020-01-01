@@ -73,7 +73,7 @@ public class SuperPlayer extends AppCompatActivity {
         int bufferSize = Integer.parseInt(buffersizeString);
 
         String path = getPackageResourcePath();
-        AssetFileDescriptor fd = getResources().openRawResourceFd(R.raw.shook_ones);
+        AssetFileDescriptor fd = getResources().openRawResourceFd(R.raw.brother);
         int fileOffset = (int)fd.getStartOffset();
         int fileLength = (int)fd.getLength();
         try {

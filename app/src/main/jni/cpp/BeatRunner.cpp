@@ -14,65 +14,6 @@
 
 #define log_print __android_log_print
 
-//typedef struct liveTimeStretchingHandler {
-//    SuperpoweredTimeStretching *timeStretcher;
-//    SuperpoweredAudiopointerList *outputBuffers;
-//} liveTimeStretchingHandler;
-//
-//static void setupLiveTimeStretching(liveTimeStretchingHandler *handler, int currentSamplerate) {
-//    handler->timeStretcher = new SuperpoweredTimeStretching(currentSamplerate);
-//    handler->outputBuffers = new SuperpoweredAudiopointerList(8, 16);
-//}
-//
-//static void liveTimeStretchingProcess(float *outputBuffer, int numberOfFrames, int64_t *framesPositionOfTheFirstSampleInOutputBuffer, liveTimeStretchingHandler *handler) {
-//    while (numberOfFrames > 0) {
-//        // Try to fulfill the request from the output buffers first.
-//        int numberOfFramesFromOutputBuffers = (numberOfFrames < handler->outputBuffers->framesLength) ? numberOfFrames : handler->outputBuffers->framesLength;
-//
-//        if (handler->outputBuffers->makeSlice(0, numberOfFramesFromOutputBuffers)) {
-//            *framesPositionOfTheFirstSampleInOutputBuffer = handler->outputBuffers->nextSamplePosition();
-//            numberOfFramesFromOutputBuffers = 0;
-//
-//            while (true) {
-//                int numFrames = 0;
-//                float *timeStretchedAudio = (float *)handler->outputBuffers->nextSliceItem(&numFrames);
-//                if (!timeStretchedAudio) break;
-//
-//                // Incorporating this whole liveTimeStretchingProcess() method into your processing loop would be better,
-//                // as this memcpy could be done something useful instead of just copying.
-//                memcpy(outputBuffer, timeStretchedAudio, numFrames * 8);
-//
-//                outputBuffer += numFrames * 2;
-//                numberOfFramesFromOutputBuffers += numFrames;
-//            };
-//
-//            handler->outputBuffers->truncate(numberOfFramesFromOutputBuffers, true);
-//            numberOfFrames -= numberOfFramesFromOutputBuffers;
-//            if (numberOfFrames < 1) break;
-//        }
-//
-//        // There were not enough frames in the output buffers at this point. Let's feed the time stretcher.
-//        SuperpoweredAudiobufferlistElement inputBuffer;
-//
-//        // This helps you tracking the current position in your music.
-//        // You can leave it at zero too, but framesPositionOfTheFirstSampleInOutputBuffer will not reflect the current position in this case.
-//        inputBuffer.framesPosition = 0;
-//
-//        inputBuffer.startSample = 0;
-//        inputBuffer.framesUsed = 0;
-//        inputBuffer.endSample = handler->timeStretcher->numberOfInputFramesNeeded;
-//        inputBuffer.buffers[0] = SuperpoweredAudiobufferPool::getBuffer(handler->timeStretcher->numberOfInputFramesNeeded * 8 + 64);
-//        inputBuffer.buffers[1] = inputBuffer.buffers[2] = inputBuffer.buffers[3] = NULL;
-//
-//        // YOUR TODO HERE: Produce handler->timeStretcher->numberOfInputSamplesNeeded framess into inputBuffer.buffers[0], interleaved floating point audio.
-//
-//        handler->timeStretcher->process(&inputBuffer, handler->outputBuffers);
-//    }
-//}
-
-
-
-
 static bool audioProcessing(
         void * __unused clientData,	// A custom pointer your callback receives.
         short int *audioIO,	// 16-bit stereo interleaved audio input and/or output.
@@ -86,41 +27,46 @@ static bool audioProcessing(
 
 bool BeatRunner::timeStretchProcess(short int *audioIO, unsigned int sampleRate, unsigned int numFrames) {
     timeStretcher->rate = 0.8f;
-    float *rawAudioFromPlayer = (float *)malloc(numFrames * 8 + 64);
-    float *processedAudioFromStretcher;
+    // float *rawAudioFromPlayer = (float *)malloc(numFrames * 8 + 64);
+    // float *processedAudioFromStretcher = (float *)malloc(numFrames * 8 + 64);
 
-    if (player->processStereo(rawAudioFromPlayer, false, (unsigned int) numFrames)) {
-        timeStretcher->addInput(rawAudioFromPlayer, numFrames);
-        if (timeStretcher->getOutputLengthFrames() > 0) {
-            processedAudioFromStretcher = (float *)malloc(numFrames * 8 + 64); // ?
-            timeStretcher->getOutput(processedAudioFromStretcher, numFrames);
-        }
-        Superpowered::FloatToShortInt(processedAudioFromStretcher, audioIO, (unsigned int) numFrames);
-        return true;
-    } else {
+    Superpowered::AudiopointerlistElement *inputBuffer = new Superpowered::AudiopointerlistElement;
+    inputBuffer->firstFrame = 0;
+    inputBuffer->framesUsed = 0;
+    inputBuffer->lastFrame = numFrames;
+    inputBuffer->buffers[0] = Superpowered::AudiobufferPool::getBuffer(numFrames * 8 + 64);
+    inputBuffer->buffers[1] = inputBuffer->buffers[2] = inputBuffer->buffers[3] = NULL;
+
+    bool playerProcessed = player->processStereo((float *)inputBuffer->buffers[0], false, (unsigned int) numFrames);
+    if (!playerProcessed) {
         return false;
     }
 
-//    while (numFrames > 0) {
-//        int numFramesFromOutputBuffer;
-//        if (numFrames < audioPointerList->getLengthFrames()) {
-//            numFramesFromOutputBuffer = numFrames;
-//        } else {
-//            numFramesFromOutputBuffer = audioPointerList->getLengthFrames();
-//        }
-//        if (audioPointerList->makeSlice(0, numFramesFromOutputBuffer)) {
-//            numFramesFromOutputBuffer = 0;
-//            while (true) {
-//                int i = 0;
-//                float *timeStretchedAudio = (float *)audioPointerList->nextSliceItem(&i);
-//                if (!timeStretchedAudio) {
-//                    break;
-//                }
-//                memcpy()
-//            }
-//        }
-//    }
+    // Start stretching: feed the timeStretcher
+    timeStretcher->addInput((float *)inputBuffer->buffers[0], numFrames);
 
+    Superpowered::AudiopointerlistElement *outputBuffer = new Superpowered::AudiopointerlistElement;
+    outputBuffer->firstFrame = 0;
+    outputBuffer->framesUsed = 0;
+    outputBuffer->lastFrame = timeStretcher->getOutputLengthFrames();
+    outputBuffer->buffers[0] = Superpowered::AudiobufferPool::getBuffer(timeStretcher->getOutputLengthFrames() * 8 + 64);
+    outputBuffer->buffers[1] = outputBuffer->buffers[2] = outputBuffer->buffers[3] = NULL;
+
+    timeStretcher->getOutput((float *)outputBuffer->buffers[0], numFrames);
+    outputBufferList->append(outputBuffer); // Not supposed to be used in real time??
+    // Do we have some output?
+    if (outputBufferList->makeSlice(0, outputBufferList->getLengthFrames())) {
+        while (true) {
+            int numProcessedFrames = 0;
+            float *timeStretchedAudio = (float *)outputBufferList->nextSliceItem(&numProcessedFrames);
+            if (!timeStretchedAudio || *timeStretchedAudio == 0) {
+                break;
+            }
+            Superpowered::FloatToShortInt(timeStretchedAudio, audioIO, (unsigned int) numProcessedFrames);
+        }
+    }
+    outputBufferList->clear();
+    return true;
 }
 
 bool BeatRunner::process(short int *audioIO, unsigned int sampleRate, unsigned int numFrames) {
@@ -159,8 +105,9 @@ BeatRunner::BeatRunner(unsigned int sampleRate, unsigned int bufferSize) {
         -1
     );
     decoder = new Superpowered::Decoder();
-    audioPointerList = new Superpowered::AudiopointerList(8, 16);
+    outputBufferList = new Superpowered::AudiopointerList(8, 16);
     timeStretcher = new Superpowered::TimeStretching(sampleRate);
+    Superpowered::AudiobufferPool::initialize();
 }
 
 BeatRunner::~BeatRunner() {
