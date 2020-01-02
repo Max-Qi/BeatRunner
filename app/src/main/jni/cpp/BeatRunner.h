@@ -28,6 +28,7 @@ private:
     Superpowered::Decoder *decoder;
     Superpowered::TimeStretching *timeStretcher;
     Superpowered::AudiopointerList *outputBufferList;
+    bool appended = false;
 };
 
 #endif //BEATRUNNER_BEATRUNNER_H

@@ -26,9 +26,25 @@ static bool audioProcessing(
 }
 
 bool BeatRunner::timeStretchProcess(short int *audioIO, unsigned int sampleRate, unsigned int numFrames) {
-    timeStretcher->rate = 0.8f;
-    // float *rawAudioFromPlayer = (float *)malloc(numFrames * 8 + 64);
+    timeStretcher->rate = 0.7f;
+    timeStretcher->samplerate = decoder->getSamplerate();
+    float *rawAudioFromPlayer = (float *)malloc(numFrames * 8 + 64);
     // float *processedAudioFromStretcher = (float *)malloc(numFrames * 8 + 64);
+
+//    Superpowered::AudiopointerlistElement *inputBuffer = new Superpowered::AudiopointerlistElement;
+//    inputBuffer->firstFrame = 0;
+//    inputBuffer->framesUsed = 0;
+//    inputBuffer->lastFrame = numFrames;
+//    inputBuffer->buffers[0] = (float *)Superpowered::AudiobufferPool::getBuffer(numFrames * 8 + 64);
+//    inputBuffer->buffers[1] = inputBuffer->buffers[2] = inputBuffer->buffers[3] = NULL;
+
+    bool playerProcessed = player->processStereo(rawAudioFromPlayer, false, (unsigned int) numFrames);
+    if (!playerProcessed) {
+        return false;
+    }
+
+    // Start stretching: feed the timeStretcher
+    timeStretcher->addInput(rawAudioFromPlayer, numFrames);
 
     Superpowered::AudiopointerlistElement *inputBuffer = new Superpowered::AudiopointerlistElement;
     inputBuffer->firstFrame = 0;
@@ -37,35 +53,22 @@ bool BeatRunner::timeStretchProcess(short int *audioIO, unsigned int sampleRate,
     inputBuffer->buffers[0] = Superpowered::AudiobufferPool::getBuffer(numFrames * 8 + 64);
     inputBuffer->buffers[1] = inputBuffer->buffers[2] = inputBuffer->buffers[3] = NULL;
 
-    bool playerProcessed = player->processStereo((float *)inputBuffer->buffers[0], false, (unsigned int) numFrames);
-    if (!playerProcessed) {
-        return false;
-    }
-
-    // Start stretching: feed the timeStretcher
-    timeStretcher->addInput((float *)inputBuffer->buffers[0], numFrames);
-
-    Superpowered::AudiopointerlistElement *outputBuffer = new Superpowered::AudiopointerlistElement;
-    outputBuffer->firstFrame = 0;
-    outputBuffer->framesUsed = 0;
-    outputBuffer->lastFrame = timeStretcher->getOutputLengthFrames();
-    outputBuffer->buffers[0] = Superpowered::AudiobufferPool::getBuffer(timeStretcher->getOutputLengthFrames() * 8 + 64);
-    outputBuffer->buffers[1] = outputBuffer->buffers[2] = outputBuffer->buffers[3] = NULL;
-
-    timeStretcher->getOutput((float *)outputBuffer->buffers[0], numFrames);
-    outputBufferList->append(outputBuffer); // Not supposed to be used in real time??
+    timeStretcher->getOutput((float *)inputBuffer->buffers[0], numFrames);
+    outputBufferList->append(inputBuffer); // Not supposed to be used in real time??
     // Do we have some output?
-    if (outputBufferList->makeSlice(0, outputBufferList->getLengthFrames())) {
+    if (outputBufferList->makeSlice(0, numFrames)) {
         while (true) {
             int numProcessedFrames = 0;
             float *timeStretchedAudio = (float *)outputBufferList->nextSliceItem(&numProcessedFrames);
-            if (!timeStretchedAudio || *timeStretchedAudio == 0) {
+            if (!timeStretchedAudio) {
                 break;
             }
             Superpowered::FloatToShortInt(timeStretchedAudio, audioIO, (unsigned int) numProcessedFrames);
-        }
-    }
-    outputBufferList->clear();
+            audioIO += numProcessedFrames * 2;
+            outputBufferList->removeFromStart(numFrames); // ?
+        };
+    };
+
     return true;
 }
 
@@ -94,6 +97,10 @@ BeatRunner::BeatRunner(unsigned int sampleRate, unsigned int bufferSize) {
         false  // enableNetworking (using Superpowered::httpRequest)
     );
     player = new Superpowered::AdvancedAudioPlayer(sampleRate, 0);
+    decoder = new Superpowered::Decoder();
+    outputBufferList = new Superpowered::AudiopointerList(8, 16);
+    timeStretcher = new Superpowered::TimeStretching(sampleRate);
+    Superpowered::AudiobufferPool::initialize();
     output = new SuperpoweredAndroidAudioIO (
         sampleRate,
         bufferSize,
@@ -104,10 +111,6 @@ BeatRunner::BeatRunner(unsigned int sampleRate, unsigned int bufferSize) {
         -1,
         -1
     );
-    decoder = new Superpowered::Decoder();
-    outputBufferList = new Superpowered::AudiopointerList(8, 16);
-    timeStretcher = new Superpowered::TimeStretching(sampleRate);
-    Superpowered::AudiobufferPool::initialize();
 }
 
 BeatRunner::~BeatRunner() {
@@ -156,7 +159,6 @@ void BeatRunner::TimeStretch(const char *path, int offset, int length) {
     short int *intBuffer = (short int *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(short int) + 16384);
     float *floatBuffer = (float *)malloc(decoder->getFramesPerChunk() * 4 * sizeof(float));
 
-    timeStretcher->rate = 1.50f;
     FILE *stretchedFile = Superpowered::createWAV("base.wav", decoder->getSamplerate(), 2);
     if (!stretchedFile) {
         return;
