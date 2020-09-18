@@ -26,24 +26,17 @@ static bool audioProcessing(
 }
 
 bool BeatRunner::timeStretchProcess(short int *audioIO, unsigned int sampleRate, unsigned int numFrames) {
-    timeStretcher->rate = 0.7f;
     timeStretcher->samplerate = decoder->getSamplerate();
     float *rawAudioFromPlayer = (float *)malloc(numFrames * 8 + 64);
-    // float *processedAudioFromStretcher = (float *)malloc(numFrames * 8 + 64);
+     float *temp = (float *)malloc(numFrames * 8 + 64);
 
-//    Superpowered::AudiopointerlistElement *inputBuffer = new Superpowered::AudiopointerlistElement;
-//    inputBuffer->firstFrame = 0;
-//    inputBuffer->framesUsed = 0;
-//    inputBuffer->lastFrame = numFrames;
-//    inputBuffer->buffers[0] = (float *)Superpowered::AudiobufferPool::getBuffer(numFrames * 8 + 64);
-//    inputBuffer->buffers[1] = inputBuffer->buffers[2] = inputBuffer->buffers[3] = NULL;
-
-    bool playerProcessed = player->processStereo(rawAudioFromPlayer, false, (unsigned int) numFrames);
+    bool playerProcessed = player->processStereo(temp, false, (unsigned int) numFrames);
     if (!playerProcessed) {
         return false;
     }
 
-    // Start stretching: feed the timeStretcher
+    Superpowered::ShortIntToFloat(audioIO, rawAudioFromPlayer, numFrames);
+
     timeStretcher->addInput(rawAudioFromPlayer, numFrames);
 
     Superpowered::AudiopointerlistElement *inputBuffer = new Superpowered::AudiopointerlistElement;
@@ -53,8 +46,10 @@ bool BeatRunner::timeStretchProcess(short int *audioIO, unsigned int sampleRate,
     inputBuffer->buffers[0] = Superpowered::AudiobufferPool::getBuffer(numFrames * 8 + 64);
     inputBuffer->buffers[1] = inputBuffer->buffers[2] = inputBuffer->buffers[3] = NULL;
 
+    outputBufferList->append(inputBuffer);
+
     timeStretcher->getOutput((float *)inputBuffer->buffers[0], numFrames);
-    outputBufferList->append(inputBuffer); // Not supposed to be used in real time??
+
     // Do we have some output?
     if (outputBufferList->makeSlice(0, numFrames)) {
         while (true) {
@@ -65,8 +60,9 @@ bool BeatRunner::timeStretchProcess(short int *audioIO, unsigned int sampleRate,
             }
             Superpowered::FloatToShortInt(timeStretchedAudio, audioIO, (unsigned int) numProcessedFrames);
             audioIO += numProcessedFrames * 2;
-            outputBufferList->removeFromStart(numFrames); // ?
         };
+        outputBufferList->removeFromStart(numFrames); // ?
+//        outputBufferList->clear();
     };
 
     return true;
@@ -101,6 +97,7 @@ BeatRunner::BeatRunner(unsigned int sampleRate, unsigned int bufferSize) {
     outputBufferList = new Superpowered::AudiopointerList(8, 16);
     timeStretcher = new Superpowered::TimeStretching(sampleRate);
     Superpowered::AudiobufferPool::initialize();
+    timeStretcher->rate = 0.8f;
     output = new SuperpoweredAndroidAudioIO (
         sampleRate,
         bufferSize,
